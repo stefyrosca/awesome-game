@@ -3,12 +3,12 @@ const initialWidth = 32, initialHeight = 32;
 const initialX = 100, initialY = 100;
 const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xfff000, 0xff00f0, 0xff000f];
 
-var game = new Phaser.Game(800, 600, Phaser.AUTO, '', {preload: preload, create: create, update: update, render: render});
+const game = new Phaser.Game(800, 600, Phaser.AUTO, '', {preload: preload, create: create, update: update, render: render});
 var currentPlayer;
 var foodGroup, cursors;
 
 function preload() {
-    game.load.image('background', 'js/assets/background.png')
+    game.load.image('background', 'js/assets/background.png');
     game.load.image('player', 'js/assets/star.png')
 }
 

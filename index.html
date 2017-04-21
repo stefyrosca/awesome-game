@@ -1,0 +1,27 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Awesome game</title>
+    <script src="app/vendors/phaser.js"></script>
+</head>
+<body>
+<script src="app/Player.js"></script>
+<script src="app/Boot.js"></script>
+<script src="app/Preload.js"></script>
+<script src="app/GameTitle.js"></script>
+<!--<script src="js/game.js"></script>-->
+<div id="content"></div>
+<script>
+    (function () {
+                const game = new Phaser.Game(800, 600, Phaser.AUTO, "game");
+                game.state.add("Boot", Boot);
+                game.state.add("Preload", Preload);
+                game.state.add("GameTitle", GameTitle);
+                game.state.start("Boot")
+            }
+    )();
+//    );
+</script>
+</body>
+</html>
