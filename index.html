@@ -10,6 +10,7 @@
 <script src="app/Boot.js"></script>
 <script src="app/Preload.js"></script>
 <script src="app/GameTitle.js"></script>
+<script src="app/Game.js"></script>
 <!--<script src="js/game.js"></script>-->
 <div id="content"></div>
 <script>
@@ -18,6 +19,7 @@
                 game.state.add("Boot", Boot);
                 game.state.add("Preload", Preload);
                 game.state.add("GameTitle", GameTitle);
+                game.state.add("Game", Game);
                 game.state.start("Boot")
             }
     )();

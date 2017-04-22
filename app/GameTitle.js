@@ -14,8 +14,8 @@ class GameTitle {
 
     playTheGame() {
         console.log('clicked !!');
-        // this.gameTitle.destroy();
-        // this.playButton.destroy();
-        // this.game.state.start("TheGame");
+        this.gameTitle.destroy();
+        this.playButton.destroy();
+        this.game.state.start("Game");
     }
 }
