@@ -1,7 +1,12 @@
 const foodDiameter = 15;
 const initialWidth = 32, initialHeight = 32;
 const initialX = 100, initialY = 100;
-const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xfff000, 0xff00f0, 0xff000f];
+const worldBounds = {
+    x: 1000,
+    y: 1000
+}
+const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xfff000, 0xff00f0, 0xff000f, 0x0099cc, 0xcc0033, 0x00cc33, 0x99e6ff,
+    0x009933, 0xb3ffcc, 0x00e6ac];
 
 class Game {
     constructor() {
@@ -10,37 +15,37 @@ class Game {
     }
 
     preload() {
-        this.game.world.setBounds(-500, -500, 1000, 1000); //game world 2000 x 2000
+        this.game.world.setBounds(0, 0, worldBounds.x, worldBounds.y); //game world 2000 x 2000
         this.game.physics.startSystem(Phaser.Physics.P2JS);
 
-        this.cursors = this.game.input.keyboard.createCursorKeys();
+        this.cursors = this.game.cursors;
 
-        var land = this.game.add.tileSprite(0, 0, 800, 600, 'background');
+        var land = this.game.add.tileSprite(0, 0, 800, 600, 'star-background');
         land.fixedToCamera = true;
 
         this.generateFood();
 
         var player = this.generatePlayer();
         this.currentPlayer = new Player(initialX, initialY, 1, player);
+        this.score = this.game.add.bitmapText(5, 5, 'carrier_command', `Score: ${this.currentPlayer.points}`, 20);
+        this.score.fixedToCamera = true;
 
         this.game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.2, 0.2);
-        console.log('GAME!!', this.game);
-        console.log(this.currentPlayer)
 
     }
 
     generatePlayer() {
-        var player = this.game.add.tileSprite(this.game.world.centerX, this.game.world.centerY, initialWidth, initialHeight, "player");
+        var player = this.game.add.tileSprite(this.game.world.bounds.width / 2, this.game.world.bounds.height / 2, initialWidth, initialHeight, "player");
         //enable physics
         player.enableBody = true;
         this.game.physics.enable(player, Phaser.Physics.ARCADE);
         this.game.physics.p2.enable(player);
 
 
-        var color = colors[Math.floor((Math.random() * (colors.length + 1)))];
+        var color = this.game.rnd.pick(colors);//[Math.floor((Math.random() * (colors.length + 1)))];
         player.tint = color;
+        player.anchor.setTo(0, 0);
         player.scale.setTo(1.5);
-        player.anchor.setTo(0.5, 0.5);
         player.body.collideWorldBounds = true;
 
         return player;
@@ -52,19 +57,18 @@ class Game {
         this.foodGroup.immovable = false;
         this.foodGroup.collideWorldBounds = true;
         this.food = [];
-        for (var i = 0; i < 2; i++) {
-            var f = this.game.add.graphics(Math.random() * 100 + 1, Math.random() * 100 + 1, this.foodGroup);
-            var color = colors[Math.floor((Math.random() * (colors.length + 1)))];
+        for (var i = 0; i < 100; i++) {
+            var f = this.game.add.graphics(Math.random() * worldBounds.x, Math.random() * worldBounds.y, this.foodGroup);
+            // var f = this.game.add.graphics(150,150, this.foodGroup);
+            var color = this.game.rnd.pick(colors);//[Math.floor((Math.random() * (colors.length + 1)))];
             // //draw the circle
             f.beginFill(color);
-            f.drawCircle(f.x, f.y, foodDiameter);
+            f.drawCircle(0, 0, foodDiameter);
             f.endFill();
             f.body.collideWorldBounds = true;
             f.name = 'food' + i;
             this.food.push(f);
         }
-        console.log('food', this.food);
-        console.log('food group', this.foodGroup);
     }
 
     update() {
@@ -82,24 +86,21 @@ class Game {
         }
 
         var hitEnemy = this.game.physics.arcade.collide(this.currentPlayer.player, this.foodGroup, this.onCollision, null, this);
-        if (hitEnemy) {
-            // console.log('HIT!!')
-            // console.log(hitEnemy)
-        }
-        // game.physics.arcade.overlap(this.currentPlayer.player, this.foodGroup, this.touchEnemy, this.extraCallback, this);
+        this.score.text = `Score: ${this.currentPlayer.points}`;
     }
 
     onCollision(player, food) {
-        // this.reanimateFood(food);
-        // console.log('this', this);
-        console.log('food', food);
+        this.currentPlayer.points++;
+        this.currentPlayer.player.scale.x+=0.01;
+        this.currentPlayer.player.scale.y+=0.01;
+        this.currentPlayer.x = player.position.x;
+        this.currentPlayer.y = player.position.y;
         this.regenerateFood(food);
-        console.log('food', food);
     }
 
     regenerateFood(food) {
-        food.body.position.x = Math.random() * 100 + 1;
-        food.body.position.y = Math.random() * 100 + 1;
+        food.body.position.x = Math.random() * worldBounds.x;
+        food.body.position.y = Math.random() * worldBounds.y;
         // food.moveTo(Math.random() * 100 + 1, Math.random() * 100 + 1);
         food.body.velocity.x = 0;
         food.body.velocity.y = 0;
@@ -107,8 +108,8 @@ class Game {
 
     render() {
         // this.game.debug.cameraInfo(this.game.camera, 16, 150);
-        this.game.debug.spriteInfo(this.currentPlayer.player, 16, 150);
-        this.game.debug.bodyInfo(this.food[0], 16, 24);
+        // this.game.debug.spriteInfo(this.currentPlayer.player, 16, 150);
+        // this.game.debug.bodyInfo(this.food[0], 16, 24);
     }
 
 }
