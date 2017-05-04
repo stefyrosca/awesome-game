@@ -1,51 +1,68 @@
-const log = console.log;
-const http = require('http');
-const path = require('path');
-const ecstatic = require('ecstatic');
-const socketIo = require('socket.io');
+var server = require('http').createServer();
+var io = require('socket.io')(server);
 
-let io;
+io.on('connection', function(client){
+    client.on('new_player', (player)=>onNewPlayer(client, player));
+    client.on('disconnect', function(){});
+});
+server.listen(3000);
 
-const server = http.createServer(ecstatic({root: path.resolve(__dirname, '../')}))
-    .listen(3000, () => {
-        io = socketIo.listen(server);
-        io.on('connection', client => {
-            client.on('disconnect', () => onRemovePlayer(client));
-            client.on('new player', (player) => onNewPlayer(client, player))
-            client.on('move player', (player) => onMovePlayer(client, player));
-        })
-    });
-
-const players = {};
-
-const onRemovePlayer = client => {
-    log(`removing player: ${client.id}`);
-    const removePlayer = players[client.id];
-    if (!removePlayer) {
-        log(`player not found: ${client.id}`);
-        return;
+class Player {
+    constructor() {}
+    createFromJson(player, sprite) {
+        this.position = player.position;
+        this.points = player.points;
+        this.id = player.id;
+        this.tint = player.tint;
+        this.scale = player.scale;
+        this.width = player.width;
+        this.height = player.height;
+        this.velocity = player.velocity;
     }
-    delete players[client.id];
-    io.emit('remove currentPlayer', removePlayer);
-};
+}
 
+// let io;
+
+// const server = http.createServer(ecstatic({root: path.resolve(__dirname, '../')}))
+//     .listen(3000, () => {
+//         io = socketIo.listen(server);
+//         io.on('connect', client => {
+//             client.on('disconnect', () => onRemovePlayer(client));
+//             client.on('new_player', (player) => onNewPlayer(client, player))
+//             client.on('move player', (player) => onMovePlayer(client, player));
+//         })
+//     });
+//
+const players = {};
+//
+// const onRemovePlayer = client => {
+//     log(`removing player: ${client.id}`);
+//     const removePlayer = players[client.id];
+//     if (!removePlayer) {
+//         log(`player not found: ${client.id}`);
+//         return;
+//     }
+//     delete players[client.id];
+//     io.emit('remove currentPlayer', removePlayer);
+// };
+//
 const onNewPlayer = (ioClient, player) => {
-    log(`new player: ${ioClient.id}`);
-    console.log('new currentPlayer', player);
-    const newPlayer = new Player(player.x, player.y, player.angle);
-    newPlayer.id = ioClient.id
-    io.emit('new currentPlayer', newPlayer);
-    Object.getOwnPropertyNames(players).forEach(id => ioClient.emit('new currentPlayer', players[id]));
+    console.log(`new player: ${ioClient.id}`);
+    let newPlayer = new Player();
+    newPlayer.createFromJson(JSON.parse(player));
+    newPlayer.id = ioClient.id;
+    io.emit('new_player', newPlayer);
+    Object.getOwnPropertyNames(players).forEach(id => ioClient.emit('new_player', players[id]));
     players[newPlayer.id] = newPlayer;
 }
-
-function onMovePlayer(ioClient, player) {
-    log(`moving player: ${ioClient.id}`);
-    const movePlayer = players[ioClient.id];
-    if (!movePlayer) {
-        log(`player not found: ${ioClient.id}`);
-        return;
-    }
-    Object.assign(movePlayer, player);
-    io.emit('move currentPlayer', movePlayer);
-}
+//
+// function onMovePlayer(ioClient, player) {
+//     log(`moving player: ${ioClient.id}`);
+//     const movePlayer = players[ioClient.id];
+//     if (!movePlayer) {
+//         log(`player not found: ${ioClient.id}`);
+//         return;
+//     }
+//     Object.assign(movePlayer, player);
+//     io.emit('move currentPlayer', movePlayer);
+// }

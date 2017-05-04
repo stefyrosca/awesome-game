@@ -12,7 +12,7 @@ class Game {
     constructor() {
         this.TAG = "Game";
         console.log(this.TAG, 'constructor');
-        this.socket = io.connect(window.location.host);
+        this.socket = io.connect("http://localhost:3000");
         this.players = {};
     }
 
@@ -43,12 +43,12 @@ class Game {
         this.game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.2, 0.2);
     }
 
-    generatePlayer(x, y, width = initialWidth, height = initialHeight, name = "player", color, scale = 1.5) {
+    generatePlayer(x, y, width = initialWidth, height = initialHeight, name = "player", color, scale = {x: 1.5, y: 1.5}) {
         x = x ? x : this.game.world.bounds.width / 2;
         y = y ? y : this.game.world.bounds.height / 2;
         color = color ? color : this.game.rnd.pick(colors);//[Math.floor((Math.random() * (colors.length + 1)))];
 
-        var player = this.game.add.tileSprite(x, y, width, height, name);
+        var player = this.game.add.tileSprite(x, y, 32, 32, name);
         //enable physics
         player.enableBody = true;
         this.game.physics.enable(player, Phaser.Physics.ARCADE);
@@ -57,7 +57,7 @@ class Game {
 
         player.tint = color;
         player.anchor.setTo(0, 0);
-        player.scale.setTo(scale);
+        player.scale.setTo(scale.x, scale.y);
         player.body.collideWorldBounds = true;
 
         return player;
@@ -121,14 +121,16 @@ class Game {
     }
 
     setEventHandlers() {
-        this.socket.on('connect', () => {
-            console.log('connect', this.currentPlayer);
-            this.socket.emit('new_player', this.currentPlayer.toJson());
+        this.socket.emit('new_player', JSON.stringify(this.currentPlayer.toJson()));
 
-            this.socket.on('new_player', (enemy) => {
-                console.log('new player', enemy);
+        this.socket.on('new_player', (enemy) => {
+            console.log('new player!!', enemy)
+            if (enemy.id !== this.currentPlayer.id) {
                 this.players[enemy.id] = new Enemy(enemy);
-            });
+                var generatedEnemy =
+                    this.generatePlayer(enemy.position.x, enemy.position.y, enemy.width, enemy. height, "player", enemy.tint, enemy.scale);
+                this.enemyGroup.add(generatedEnemy);
+            }
         });
     }
 

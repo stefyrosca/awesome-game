@@ -5,7 +5,8 @@
   "main": "server/index.js",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "start": "node ./server"
+    "start": "node ./server",
+    "start-dev": "nodemon ./server"
   },
   "author": "",
   "license": "ISC",
@@ -13,5 +14,8 @@
     "ecstatic": "^2.1.0",
     "phaser": "^2.6.2",
     "socket.io": "^1.7.3"
+  },
+  "devDependencies": {
+    "nodemon": "^1.11.0"
   }
 }

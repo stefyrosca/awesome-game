@@ -26,23 +26,22 @@ class Player {
     }
 
     enemyCollision(enemy) {
-        if (enemy.sprite.alive && 0.9 * this.points >= enemy.points) {
+        if (0.9 * this.points >= enemy.points) {
             this.points += enemy.points;
             this.sprite.scale.x += 0.01 * enemy.points;
             this.sprite.scale.y += 0.01 * enemy.points;
             //kill the other guy
-            var enemy = {
-                id: enemy.sprite.id,
-                speed: enemy.sprite.speed,
-                color: enemy.sprite.color,
-                x: enemy.sprite.x,
-                y: enemy.sprite.y,
-                height: enemy.sprite.height,
-                width: enemy.sprite.width
-            };
-            enemy.sprite.kill();
+            // var enemy = {
+            //     id: enemy.id,
+            //     velocity: enemy.speed,
+            //     tint: enemy.tint,
+            //     position: enemy.position,
+            //     height: enemy.height,
+            //     width: enemy.width,
+            //     scale: enemy.scale
+            // };
             this.socket.emit('kill_player', enemy);
-        } else if (enemy.sprite.alive && 0.9 * enemy.points >= this.points) {
+        } else if (0.9 * enemy.points >= this.points) {
             this.kill();
             this.socket.emit('kill_player', this.toJson());
             //kill you
@@ -51,13 +50,29 @@ class Player {
         }
     }
 
+    createFromJson(player, sprite) {
+        this.x = player.position.x;
+        this.y = player.position.y;
+        this.points = player.points;
+        this.id = player.id;
+        this.sprite = sprite ? sprite : null;
+        this.tint = player.tint;
+        this.scale = player.scale;
+        this.width = player.width;
+        this.height = player.height;
+        this.velocity = player.velocity;
+    }
+
     toJson() {
         return {
-            x: this.sprite.position.x,
-            y: this.sprite.position.y,
+            position: this.sprite.position,
             points: this.points,
             id: this.id,
-            sprite: this.sprite
-        }
+            tint: this.sprite.tint,
+            scale: this.sprite.scale,
+            width: this.sprite.width,
+            height: this.sprite.height,
+            velocity: this.sprite.body.velocity
+        };
     }
 }
