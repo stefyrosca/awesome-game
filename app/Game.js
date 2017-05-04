@@ -99,6 +99,7 @@ class Game {
         this.currentPlayer.sprite.body.velocity.x = 0;
         this.currentPlayer.sprite.body.velocity.y = 0;
 
+        var oldPosition = {x: this.currentPlayer.sprite.position.x, y: this.currentPlayer.sprite.position.y};
         if (this.cursors.left.isDown) {
             this.currentPlayer.sprite.body.velocity.x = -150;
         }
@@ -110,6 +111,13 @@ class Game {
         }
         if (this.cursors.down.isDown) {
             this.currentPlayer.sprite.body.velocity.y = 150;
+        }
+
+        var newPosition = this.currentPlayer.sprite.body.position;
+
+
+        if (oldPosition.x != newPosition.x || oldPosition.y != newPosition.y) {
+            this.socket.emit("move_player", JSON.stringify(newPosition));
         }
 
         // this.currentPlayer.updatePosition();
@@ -124,12 +132,19 @@ class Game {
         this.socket.emit('new_player', JSON.stringify(this.currentPlayer.toJson()));
 
         this.socket.on('new_player', (enemy) => {
-            console.log('new player!!', enemy)
+            console.log('new player!!', enemy);
             if (enemy.id !== this.currentPlayer.id) {
-                this.players[enemy.id] = new Enemy(enemy);
                 var generatedEnemy =
                     this.generatePlayer(enemy.position.x, enemy.position.y, enemy.width, enemy. height, "player", enemy.tint, enemy.scale);
                 this.enemyGroup.add(generatedEnemy);
+                this.players[enemy.id] = new Enemy(generatedEnemy);
+            }
+        });
+
+        this.socket.on('move_player', (enemy) => {
+            console.log('move!!!!!!!!', enemy);
+            if (enemy.id !== this.currentPlayer.id) {
+                this.players[enemy.id].updatePosition(enemy.position.x, enemy.position.y);
             }
         });
     }

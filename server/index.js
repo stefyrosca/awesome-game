@@ -3,6 +3,7 @@ var io = require('socket.io')(server);
 
 io.on('connection', function(client){
     client.on('new_player', (player)=>onNewPlayer(client, player));
+    client.on('move_player', (player)=>onMovePlayer(client, player));
     client.on('disconnect', function(){});
 });
 server.listen(3000);
@@ -55,14 +56,14 @@ const onNewPlayer = (ioClient, player) => {
     Object.getOwnPropertyNames(players).forEach(id => ioClient.emit('new_player', players[id]));
     players[newPlayer.id] = newPlayer;
 }
-//
-// function onMovePlayer(ioClient, player) {
-//     log(`moving player: ${ioClient.id}`);
-//     const movePlayer = players[ioClient.id];
-//     if (!movePlayer) {
-//         log(`player not found: ${ioClient.id}`);
-//         return;
-//     }
-//     Object.assign(movePlayer, player);
-//     io.emit('move currentPlayer', movePlayer);
-// }
+
+function onMovePlayer(ioClient, position) {
+    console.log('move platyer', position)
+    let movePlayer = players[ioClient.id];
+    if (!movePlayer) {
+        log(`player not found: ${ioClient.id}`);
+        return;
+    }
+    movePlayer.position = JSON.parse(position);
+    io.emit('move_player', movePlayer);
+}
