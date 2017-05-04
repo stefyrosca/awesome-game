@@ -1,27 +1,20 @@
 const log = console.log;
 const http = require('http');
 const path = require('path');
+const ecstatic = require('ecstatic');
 const socketIo = require('socket.io');
 
 let io;
 
-const server = http.createServer()
+const server = http.createServer(ecstatic({root: path.resolve(__dirname, '../')}))
     .listen(3000, () => {
         io = socketIo.listen(server);
         io.on('connection', client => {
             client.on('disconnect', () => onRemovePlayer(client));
-            client.on('new currentPlayer', (player) => onNewPlayer(client, player))
-            client.on('move currentPlayer', (player) => onMovePlayer(client, player));
+            client.on('new player', (player) => onNewPlayer(client, player))
+            client.on('move player', (player) => onMovePlayer(client, player));
         })
     });
-
-class Player {
-    constructor(startX, startY, startAngle) {
-        this.x = startX;
-        this.y = startY;
-        this.angle = startAngle;
-    }
-}
 
 const players = {};
 
