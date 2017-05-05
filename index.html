@@ -14,6 +14,7 @@
 <script src="app/Preload.js"></script>
 <script src="app/GameTitle.js"></script>
 <script src="app/Game.js"></script>
+<script src="app/GameOver.js"></script>
 <!--<script src="js/game.js"></script>-->
 <div id="content"></div>
 <script>
@@ -23,6 +24,7 @@
                 game.state.add("Preload", Preload);
                 game.state.add("GameTitle", GameTitle);
                 game.state.add("Game", Game);
+                game.state.add("GameOver", GameOver);
                 game.state.start("Boot")
             }
     )();
