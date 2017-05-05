@@ -16,6 +16,7 @@ class Player {
     // }
 
     kill() {
+        console.log('GAME OVER, bitch')
         this.sprite.kill();
     }
 
@@ -27,26 +28,29 @@ class Player {
 
     enemyCollision(enemy) {
         if (0.9 * this.points >= enemy.points) {
+            console.log('you won!!');
+            console.log('this.currentPlayer', this.id)
+            console.log('enemy id', enemy.id)
             this.points += enemy.points;
             this.sprite.scale.x += 0.01 * enemy.points;
             this.sprite.scale.y += 0.01 * enemy.points;
             //kill the other guy
-            // var enemy = {
-            //     id: enemy.id,
-            //     velocity: enemy.speed,
-            //     tint: enemy.tint,
-            //     position: enemy.position,
-            //     height: enemy.height,
-            //     width: enemy.width,
-            //     scale: enemy.scale
-            // };
-            this.socket.emit('kill_player', enemy);
+            var enemyJson = {
+                id: enemy.id,
+                velocity: enemy.body.velocity,
+                tint: enemy.tint,
+                position: enemy.position,
+                height: enemy.height,
+                width: enemy.width,
+                scale: enemy.scale
+            };
+            console.log('kill the enemy', enemyJson.id);
+            this.socket.emit('remove_player', JSON.stringify(enemyJson));
         } else if (0.9 * enemy.points >= this.points) {
-            this.kill();
-            this.socket.emit('kill_player', this.toJson());
+            console.log('you lost!!');
             //kill you
-            enemy.sprite.kill();
-            this.socket.emit('kill_player', enemy);
+            this.kill();
+            this.socket.emit('remove_player', JSON.stringify(this.toJson()));
         }
     }
 

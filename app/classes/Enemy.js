@@ -9,9 +9,16 @@ class Enemy {
     }
 
     updatePosition(x, y) {
-        console.log('update position', this.enemy.x, this.enemy.y, x, y)
-        this.enemy.x = x;
-        this.enemy.y = y;
+        this.enemy.position.x = x;
+        this.enemy.position.y = y;
+    }
+
+    updatePlayer(player) {
+        this.enemy = Object.assign(this.enemy, player);
+    }
+
+    remove() {
+        this.enemy.destroy();
     }
 
 }

@@ -3,8 +3,10 @@ var io = require('socket.io')(server);
 
 io.on('connection', function(client){
     client.on('new_player', (player)=>onNewPlayer(client, player));
-    client.on('move_player', (player)=>onMovePlayer(client, player));
-    client.on('disconnect', function(){});
+    client.on('move_player', (position)=>onMovePlayer(client, position));
+    client.on('update_player', (scale)=>onUpdatePlayer(client, scale));
+    client.on('remove_player', (player)=>onKillPlayer(client, player));
+    client.on('disconnect', ()=>onRemovePlayer(client));
 });
 server.listen(3000);
 
@@ -36,16 +38,16 @@ class Player {
 //
 const players = {};
 //
-// const onRemovePlayer = client => {
-//     log(`removing player: ${client.id}`);
-//     const removePlayer = players[client.id];
-//     if (!removePlayer) {
-//         log(`player not found: ${client.id}`);
-//         return;
-//     }
-//     delete players[client.id];
-//     io.emit('remove currentPlayer', removePlayer);
-// };
+const onRemovePlayer = client => {
+    console.log(`removing player: ${client.id}`);
+    const removePlayer = players[client.id];
+    if (!removePlayer) {
+        console.log(`player not found: ${client.id}`);
+        return;
+    }
+    delete players[client.id];
+    io.emit('remove_player', removePlayer);
+};
 //
 const onNewPlayer = (ioClient, player) => {
     console.log(`new player: ${ioClient.id}`);
@@ -57,13 +59,35 @@ const onNewPlayer = (ioClient, player) => {
     players[newPlayer.id] = newPlayer;
 }
 
-function onMovePlayer(ioClient, position) {
-    console.log('move platyer', position)
-    let movePlayer = players[ioClient.id];
-    if (!movePlayer) {
-        log(`player not found: ${ioClient.id}`);
+function onUpdatePlayer(ioClient, player) {
+    let oldPlayer = players[ioClient.id];
+    if (!oldPlayer) {
+        console.log(`player not found: ${ioClient.id}`);
         return;
     }
-    movePlayer.position = JSON.parse(position);
-    io.emit('move_player', movePlayer);
+    console.log('updatePlayer', player);
+    players[ioClient.id] = JSON.parse(player);
+    io.emit('update_player', players[ioClient.id]);
+}
+
+function onMovePlayer(ioClient, position) {
+    console.log('players', players);
+    let player = players[ioClient.id];
+    if (!player) {
+        console.log(`player not found: ${ioClient.id}`);
+        return;
+    }
+    player.position = JSON.parse(position);
+    io.emit('move_player', player);
+}
+
+function onKillPlayer(ioClient, player) {
+    console.log('remove! player', player);
+    let killedPlayer = players[player.id];
+    if (!killedPlayer) {
+        console.log(`player not found: ${player.id}`);
+        return;
+    }
+    delete players[player.id];
+    io.emit('remove_player', killedPlayer);
 }

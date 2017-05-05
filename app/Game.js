@@ -43,7 +43,7 @@ class Game {
         this.game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.2, 0.2);
     }
 
-    generatePlayer(x, y, width = initialWidth, height = initialHeight, name = "player", color, scale = {x: 1.5, y: 1.5}) {
+    generatePlayer(x, y, width = initialWidth, height = initialHeight, name = "player", color, scale = {x: 1.5,y: 1.5}) {
         x = x ? x : this.game.world.bounds.width / 2;
         y = y ? y : this.game.world.bounds.height / 2;
         color = color ? color : this.game.rnd.pick(colors);//[Math.floor((Math.random() * (colors.length + 1)))];
@@ -132,19 +132,43 @@ class Game {
         this.socket.emit('new_player', JSON.stringify(this.currentPlayer.toJson()));
 
         this.socket.on('new_player', (enemy) => {
-            console.log('new player!!', enemy);
             if (enemy.id !== this.currentPlayer.id) {
                 var generatedEnemy =
-                    this.generatePlayer(enemy.position.x, enemy.position.y, enemy.width, enemy. height, "player", enemy.tint, enemy.scale);
+                    this.generatePlayer(enemy.position.x, enemy.position.y, enemy.width, enemy.height, "player", enemy.tint, enemy.scale);
+                generatedEnemy.points = enemy.points;
+                generatedEnemy.id = enemy.id;
                 this.enemyGroup.add(generatedEnemy);
                 this.players[enemy.id] = new Enemy(generatedEnemy);
+                console.log('players', this.players);
             }
         });
 
         this.socket.on('move_player', (enemy) => {
-            console.log('move!!!!!!!!', enemy);
             if (enemy.id !== this.currentPlayer.id) {
                 this.players[enemy.id].updatePosition(enemy.position.x, enemy.position.y);
+            }
+        });
+
+        this.socket.on('update_player', enemy => {
+            if (enemy.id !== this.currentPlayer.id) {
+                console.log('enemy', enemy);
+                this.players[enemy.id].updatePlayer(enemy);
+                console.log('update', this.players[enemy.id]);
+            }
+        });
+
+        this.socket.on('remove_player', (player) => {
+            console.log('remove_player', player)
+            if (player.id == this.currentPlayer.id) {
+                console.log('I DIED :(');
+                this.currentPlayer.sprite.destroy();
+                this.game.state.start("GameOver");
+                return;
+            }
+            var removePlayer = this.players[player.id];
+            if (removePlayer) {
+                removePlayer.remove();
+                delete this.players[player.id];
             }
         });
     }
@@ -154,9 +178,13 @@ class Game {
         // this.currentPlayer.x = sprite.position.x;
         // this.currentPlayer.y = sprite.position.y;
         this.regenerateFood(food);
+        this.socket.emit('update_player', JSON.stringify(this.currentPlayer.toJson()));
     }
 
     onEnemyCollision(player, enemy) {
+        console.log('enemy collision', player, enemy);
+        enemy.body.velocity.x = 0;
+        enemy.body.velocity.y = 0;
         this.currentPlayer.enemyCollision(enemy);
     }
 
