@@ -7,6 +7,7 @@ class Player {
         this.sprite = body;
         this.points = 0;
         this.alive = true;
+        this.lastId = null;
         this.socket = socket ? socket : {};
     };
 
@@ -16,21 +17,24 @@ class Player {
     // }
 
     kill() {
-        console.log('GAME OVER, bitch')
+        console.log('GAME OVER')
         this.sprite.kill();
     }
 
-    particleCollision(points) {
-        this.points += points;
-        this.sprite.scale.x += 0.01 * points;
-        this.sprite.scale.y += 0.01 * points;
+    particleCollision(food) {
+        if (this.lastId == food.id)
+            return;
+        if (!food.alive)
+            return;
+        this.points += food.points ? food.points : 1;
+        this.sprite.scale.x += 0.01 * food.points;
+        this.sprite.scale.y += 0.01 * food.points;
+        this.lastId = food.id;
     }
 
     enemyCollision(enemy) {
         if (0.9 * this.points >= enemy.points) {
             console.log('you won!!');
-            console.log('this.currentPlayer', this.id)
-            console.log('enemy id', enemy.id)
             this.points += enemy.points;
             this.sprite.scale.x += 0.01 * enemy.points;
             this.sprite.scale.y += 0.01 * enemy.points;

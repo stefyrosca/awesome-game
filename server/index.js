@@ -1,10 +1,24 @@
 var server = require('http').createServer();
 var io = require('socket.io')(server);
+const worldBounds = {
+    x: 1000,
+    y: 1000
+}
+const foodDiameter = 15;
+const colors = [0xff0000, 0x00ff00, 0x0000ff, 0xfff000, 0xff00f0, 0xff000f, 0x0099cc, 0xcc0033, 0x00cc33, 0x99e6ff,
+    0x009933, 0xb3ffcc, 0x00e6ac];
+
+
+const players = {};
+const foods = {};
+
+generateFood();
 
 io.on('connection', function(client){
     client.on('new_player', (player)=>onNewPlayer(client, player));
     client.on('move_player', (position)=>onMovePlayer(client, position));
     client.on('update_player', (scale)=>onUpdatePlayer(client, scale));
+    client.on('eat_food', (food)=>onUpdateFood(client, food));
     client.on('remove_player', (player)=>onKillPlayer(client, player));
     client.on('disconnect', ()=>onRemovePlayer(client));
 });
@@ -24,20 +38,6 @@ class Player {
     }
 }
 
-// let io;
-
-// const server = http.createServer(ecstatic({root: path.resolve(__dirname, '../')}))
-//     .listen(3000, () => {
-//         io = socketIo.listen(server);
-//         io.on('connect', client => {
-//             client.on('disconnect', () => onRemovePlayer(client));
-//             client.on('new_player', (player) => onNewPlayer(client, player))
-//             client.on('move player', (player) => onMovePlayer(client, player));
-//         })
-//     });
-//
-const players = {};
-//
 const onRemovePlayer = client => {
     console.log(`removing player: ${client.id}`);
     const removePlayer = players[client.id];
@@ -56,6 +56,7 @@ const onNewPlayer = (ioClient, player) => {
     newPlayer.id = ioClient.id;
     io.emit('new_player', newPlayer);
     Object.getOwnPropertyNames(players).forEach(id => ioClient.emit('new_player', players[id]));
+    Object.getOwnPropertyNames(foods).forEach(id => ioClient.emit('new_food', foods[id]));
     players[newPlayer.id] = newPlayer;
 }
 
@@ -65,13 +66,21 @@ function onUpdatePlayer(ioClient, player) {
         console.log(`player not found: ${ioClient.id}`);
         return;
     }
-    console.log('updatePlayer', player);
     players[ioClient.id] = JSON.parse(player);
     io.emit('update_player', players[ioClient.id]);
 }
 
+function onUpdateFood(ioClient, food) {
+    var x =  Math.random() * worldBounds.x;
+    var y =  Math.random() * worldBounds.y;
+    var newFood = JSON.parse(food);
+    newFood.x = x;
+    newFood.y = y;
+    foods[newFood.id] = newFood;
+    io.emit('update_food', newFood);
+}
+
 function onMovePlayer(ioClient, position) {
-    console.log('players', players);
     let player = players[ioClient.id];
     if (!player) {
         console.log(`player not found: ${ioClient.id}`);
@@ -82,7 +91,7 @@ function onMovePlayer(ioClient, position) {
 }
 
 function onKillPlayer(ioClient, player) {
-    console.log('remove! player', player);
+    player = JSON.parse(player);
     let killedPlayer = players[player.id];
     if (!killedPlayer) {
         console.log(`player not found: ${player.id}`);
@@ -90,4 +99,16 @@ function onKillPlayer(ioClient, player) {
     }
     delete players[player.id];
     io.emit('remove_player', killedPlayer);
+}
+
+function generateFood() {
+    for (var i = 0; i < 50; i++) {
+        var x = Math.random() * worldBounds.x;
+        var y = Math.random() * worldBounds.y;
+        var color = colors[Math.floor((Math.random() * (colors.length + 1)))];
+        // //draw the circle
+        var name = 'food' + i;
+        var id = i;
+        foods[id] = {x, y, color, name, id, diameter: foodDiameter, points: 1};
+    }
 }

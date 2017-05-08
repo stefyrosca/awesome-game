@@ -13,29 +13,34 @@ class Game {
         this.TAG = "Game";
         console.log(this.TAG, 'constructor');
         this.socket = io.connect("http://localhost:3000");
-        this.players = {};
     }
 
     preload() {
+        this.players = {};
+        this.food = {};
+
         this.game.world.setBounds(0, 0, worldBounds.x, worldBounds.y); //game world 2000 x 2000
         this.game.physics.startSystem(Phaser.Physics.P2JS);
 
         this.cursors = this.game.cursors;
 
-        var land = this.game.add.tileSprite(0, 0, 800, 600, 'star-background');
+        var land = this.game.add.tileSprite(0, 0, 1600, 1200, 'star-background');
         land.fixedToCamera = true;
-
-        this.generateFood();
-        // this.generateEnemies();
-
-        var player = this.generatePlayer();
-        this.currentPlayer = new Player(initialX, initialY, this.socket.io.engine.id, player, this.socket);
 
         this.enemyGroup = this.game.add.physicsGroup();
         this.enemyGroup.collideWorldBounds = true;
         this.enemyGroup.enableBody = true;
 
+        this.foodGroup = this.game.add.physicsGroup();
+        this.foodGroup.immovable = false;
+        this.foodGroup.collideWorldBounds = true;
+
+        var player = this.generatePlayer();
+        this.currentPlayer = new Player(initialX, initialY, this.socket.io.engine.id, player, this.socket);
+
+
         this.setEventHandlers();
+        // this.generateFood();
 
         this.score = this.game.add.bitmapText(5, 5, 'carrier_command', `Score: ${this.currentPlayer.points}`, 20);
         this.score.fixedToCamera = true;
@@ -52,6 +57,8 @@ class Game {
         //enable physics
         player.enableBody = true;
         this.game.physics.enable(player, Phaser.Physics.ARCADE);
+        this.game.physics.enable(this.foodGroup, Phaser.Physics.ARCADE);
+        this.game.physics.enable(this.enemyGroup, Phaser.Physics.ARCADE);
         this.game.physics.p2.enable(player);
 
 
@@ -63,36 +70,27 @@ class Game {
         return player;
     }
 
-    generateFood() {
-        this.foodGroup = this.game.add.physicsGroup();
-        this.foodGroup.immovable = false;
-        this.foodGroup.collideWorldBounds = true;
-        this.food = {};
-        for (var i = 0; i < 100; i++) {
-            var f = this.game.add.graphics(Math.random() * worldBounds.x, Math.random() * worldBounds.y, this.foodGroup);
-            // var f = this.game.add.graphics(150,150, this.foodGroup);
-            var color = this.game.rnd.pick(colors);//[Math.floor((Math.random() * (colors.length + 1)))];
-            // //draw the circle
-            f.beginFill(color);
-            f.drawCircle(0, 0, foodDiameter);
-            f.body.collideWorldBounds = true;
-            f.name = 'food' + i;
-            f.id = i;
-            this.food[f.id] = f;
-        }
+    addFood(food) {
+        var f = this.game.add.graphics(food.x, food.y, this.foodGroup);
+        f.beginFill(food.color);
+        f.drawCircle(0, 0, food.diameter);
+        f.body.collideWorldBounds = true;
+        f.name = food.name;
+        f.id= food.id;
+        f.points = food.points;
+        this.food[f.id] = f;
     }
 
-    generateEnemies() {
-        this.enemyGroup = this.game.add.physicsGroup();
-        this.enemyGroup.collideWorldBounds = true;
-        this.enemyGroup.enableBody = true;
-        this.enemyGroup.immovable = true;
-        for (var i = 0; i < 5; i++) {
-            var enemy = this.generatePlayer(Math.random() * worldBounds.x, Math.random() * worldBounds.y, initialWidth, initialHeight,
-                "player", null);
-            enemy.points = 0;
-            this.enemyGroup.add(enemy);
-        }
+    updateFood(food) {
+        var f = this.food[food.id];
+
+        f.body.position.x = food.x;
+        f.body.position.y = food.y;
+        f.x = food.x;
+        f.y = food.y;
+        f.body.velocity.x = 0;
+        f.body.velocity.y = 0;
+        f.revive();
     }
 
     update() {
@@ -139,7 +137,6 @@ class Game {
                 generatedEnemy.id = enemy.id;
                 this.enemyGroup.add(generatedEnemy);
                 this.players[enemy.id] = new Enemy(generatedEnemy);
-                console.log('players', this.players);
             }
         });
 
@@ -149,11 +146,17 @@ class Game {
             }
         });
 
+        this.socket.on('new_food', (food) => {
+            this.addFood(food);
+        });
+
+        this.socket.on('update_food', (food) => {
+            this.updateFood(food);
+        });
+
         this.socket.on('update_player', enemy => {
             if (enemy.id !== this.currentPlayer.id) {
-                console.log('enemy', enemy);
                 this.players[enemy.id].updatePlayer(enemy);
-                console.log('update', this.players[enemy.id]);
             }
         });
 
@@ -174,15 +177,20 @@ class Game {
     }
 
     onFoodCollision(player, food) {
-        this.currentPlayer.particleCollision(1);
+        if (!food.alive)
+            return;
+        this.currentPlayer.particleCollision(food);
+        food.kill();
+        this.food[food.id] = food;
         // this.currentPlayer.x = sprite.position.x;
         // this.currentPlayer.y = sprite.position.y;
-        this.regenerateFood(food);
+        // this.regenerateFood(food);
         this.socket.emit('update_player', JSON.stringify(this.currentPlayer.toJson()));
+        var foodJson = {id: food.id};
+        this.socket.emit('eat_food', JSON.stringify(foodJson));
     }
 
     onEnemyCollision(player, enemy) {
-        console.log('enemy collision', player, enemy);
         enemy.body.velocity.x = 0;
         enemy.body.velocity.y = 0;
         this.currentPlayer.enemyCollision(enemy);
