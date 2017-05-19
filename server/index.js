@@ -74,6 +74,7 @@ function onUpdateFood(ioClient, food) {
     var x =  Math.random() * worldBounds.x;
     var y =  Math.random() * worldBounds.y;
     var newFood = JSON.parse(food);
+    newFood = Object.assign(newFood, foods[newFood.id])
     newFood.x = x;
     newFood.y = y;
     foods[newFood.id] = newFood;
@@ -109,6 +110,10 @@ function generateFood() {
         // //draw the circle
         var name = 'food' + i;
         var id = i;
-        foods[id] = {x, y, color, name, id, diameter: foodDiameter, points: 1};
+        foods[id] = _generate(x, y, color, name, id, foodDiameter, 1);
     }
+}
+
+function _generate(x, y, color, name, id, diameter, points) {
+    return {x, y, color, name, id, diameter, points};
 }

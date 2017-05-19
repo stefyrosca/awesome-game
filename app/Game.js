@@ -20,7 +20,7 @@ class Game {
         this.food = {};
 
         this.game.world.setBounds(0, 0, worldBounds.x, worldBounds.y); //game world 2000 x 2000
-        this.game.physics.startSystem(Phaser.Physics.P2JS);
+        this.game.physics.startSystem(Phaser.Physics.ARCADE);
 
         this.cursors = this.game.cursors;
 
@@ -48,7 +48,10 @@ class Game {
         this.game.camera.follow(player, Phaser.Camera.FOLLOW_LOCKON, 0.2, 0.2);
     }
 
-    generatePlayer(x, y, width = initialWidth, height = initialHeight, name = "player", color, scale = {x: 1.5,y: 1.5}) {
+    generatePlayer(x, y, width = initialWidth, height = initialHeight, name = "player", color, scale = {
+        x: 1.5,
+        y: 1.5
+    }) {
         x = x ? x : this.game.world.bounds.width / 2;
         y = y ? y : this.game.world.bounds.height / 2;
         color = color ? color : this.game.rnd.pick(colors);//[Math.floor((Math.random() * (colors.length + 1)))];
@@ -59,7 +62,6 @@ class Game {
         this.game.physics.enable(player, Phaser.Physics.ARCADE);
         this.game.physics.enable(this.foodGroup, Phaser.Physics.ARCADE);
         this.game.physics.enable(this.enemyGroup, Phaser.Physics.ARCADE);
-        this.game.physics.p2.enable(player);
 
 
         player.tint = color;
@@ -76,7 +78,7 @@ class Game {
         f.drawCircle(0, 0, food.diameter);
         f.body.collideWorldBounds = true;
         f.name = food.name;
-        f.id= food.id;
+        f.id = food.id;
         f.points = food.points;
         this.food[f.id] = f;
     }
@@ -113,9 +115,10 @@ class Game {
 
         var newPosition = this.currentPlayer.sprite.body.position;
 
-
         if (oldPosition.x != newPosition.x || oldPosition.y != newPosition.y) {
             this.socket.emit("move_player", JSON.stringify(newPosition));
+            if (!newPosition || !newPosition.x || !newPosition.y)
+                console.log('bad position:(!!', this.currentPlayer.sprite)
         }
 
         // this.currentPlayer.updatePosition();
@@ -142,7 +145,7 @@ class Game {
 
         this.socket.on('move_player', (enemy) => {
             if (enemy.id !== this.currentPlayer.id) {
-                this.players[enemy.id].updatePosition(enemy.position.x, enemy.position.y);
+                this.players[enemy.id] && this.players[enemy.id].updatePosition(enemy.position.x, enemy.position.y);
             }
         });
 
@@ -151,12 +154,13 @@ class Game {
         });
 
         this.socket.on('update_food', (food) => {
-            this.updateFood(food);
+            this.addFood(food);
+            // this.updateFood(food);
         });
 
         this.socket.on('update_player', enemy => {
             if (enemy.id !== this.currentPlayer.id) {
-                this.players[enemy.id].updatePlayer(enemy);
+                this.players[enemy.id] && this.players[enemy.id].updatePlayer(enemy);
             }
         });
 
@@ -165,6 +169,17 @@ class Game {
             if (player.id == this.currentPlayer.id) {
                 console.log('I DIED :(');
                 this.currentPlayer.sprite.destroy();
+                Object.keys(this.players).forEach(id => {
+                    if (id == this.currentPlayer.id)
+                        return;
+                    this.players[id].remove()
+                    delete this.players[id];
+                });
+                Object.keys(this.food).forEach(id => {
+                    this.food[id].destroy()
+                    delete this.food[id];
+                });
+                // this.socket.disconnect();
                 this.game.state.start("GameOver");
                 return;
             }
@@ -180,7 +195,7 @@ class Game {
         if (!food.alive)
             return;
         this.currentPlayer.particleCollision(food);
-        food.kill();
+        food.destroy();
         this.food[food.id] = food;
         // this.currentPlayer.x = sprite.position.x;
         // this.currentPlayer.y = sprite.position.y;
@@ -206,7 +221,7 @@ class Game {
 
     render() {
         // this.game.debug.cameraInfo(this.game.camera, 16, 150);
-        // this.game.debug.spriteInfo(this.currentPlayer.sprite, 16, 150);
+        this.game.debug.bodyInfo(this.currentPlayer.sprite, 16, 150);
         // this.game.debug.bodyInfo(this.food[0], 16, 24);
     }
 
